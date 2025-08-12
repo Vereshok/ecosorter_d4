@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Эко-Сортер - Игра о переработке мусора</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      @import url("https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap");
+
+      body {
+        font-family: "Nunito", sans-serif;
+        background: linear-gradient(135deg, #4caf50, #81c784, #a5d6a7);
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 30px;
+        animation: bounceIn 1s ease-out;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 25px;
+        padding: 30px;
+        box-shadow: 0 15px 35px rgba(76, 175, 80, 0.2);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .header::before {
+        content: "";
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(
+          45deg,
+          transparent,
+          rgba(255, 255, 255, 0.1),
+          transparent
+        );
+        animation: shimmer 3s infinite;
+      }
+
+      @keyframes shimmer {
+        0% {
+          transform: translateX(-100%) translateY(-100%) rotate(45deg);
+        }
+        100% {
+          transform: translateX(100%) translateY(100%) rotate(45deg);
+        }
+      }
+
+      .title {
+        font-size: 4rem;
+        background: linear-gradient(
+          135deg,
+          #ff6b6b,
+          #4ecdc4,
+          #45b7d1,
+          #96ceb4,
+          #feca57
+        );
+        background-size: 300% 300%;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 800;
+        margin-bottom: 15px;
+        letter-spacing: -2px;
+        animation: rainbowText 4s ease-in-out infinite;
+        text-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
+        position: relative;
+        z-index: 1;
+      }
+
+      @keyframes rainbowText {
+        0%,
+        100% {
+          background-position: 0% 50%;
+        }
+        50% {
+          background-position: 100% 50%;
+        }
+      }
+
+      .subtitle {
+        font-size: 1.4rem;
+        color: #2e7d32;
+        margin-bottom: 20px;
+        font-weight: 600;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        position: relative;
+        z-index: 1;
+      }
+
+      .fun-icons {
+        font-size: 2rem;
+        margin: 15px 0;
+        animation: float 3s ease-in-out infinite;
+      }
+
+      @keyframes float {
+        0%,
+        100% {
+          transform: translateY(0px);
+        }
+        50% {
+          transform: translateY(-10px);
+        }
+      }
+
+      .game-area {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        margin-bottom: 20px;
+      }
+
+      .materials-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+
+      .material-card {
+        background: linear-gradient(145deg, #ffffff, #f8f9fa);
+        border-radius: 20px;
+        padding: 25px;
+        text-align: center;
+        box-shadow: 0 8px 25px rgba(76, 175, 80, 0.15);
+        transition: all 0.3s ease;
+        cursor: pointer;
+        border: none;
+      }
+
+      .material-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 15px 35px rgba(76, 175, 80, 0.25);
+      }
+
+      .material-card.selected {
+        background: linear-gradient(145deg, #e8f5e8, #c8e6c9);
+        box-shadow: 0 12px 30px rgba(76, 175, 80, 0.3);
+        transform: translateY(-5px);
+      }
+
+      .material-card.completed {
+        background: linear-gradient(145deg, #4caf50, #45a049);
+        color: white;
+        box-shadow: 0 8px 20px rgba(76, 175, 80, 0.4);
+      }
+
+      .material-card.completed .material-name,
+      .material-card.completed p {
+        color: white;
+      }
+
+      .material-card.locked {
+        background: linear-gradient(145deg, #f5f5f5, #e0e0e0);
+        color: #999;
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+
+      .material-card.locked:hover {
+        transform: none;
+        box-shadow: 0 8px 25px rgba(76, 175, 80, 0.15);
+      }
+
+      .material-card.locked .material-name,
+      .material-card.locked p {
+        color: #999;
+      }
+
+      .material-icon {
+        font-size: 3rem;
+        margin-bottom: 10px;
+        display: block;
+        text-shadow: none;
+        border: none;
+        outline: none;
+      }
+
+      .material-name {
+        font-size: 1.3rem;
+        font-weight: bold;
+        color: #2e7d32;
+        margin-bottom: 10px;
+      }
+
+      .steps-container {
+        margin-top: 30px;
+        padding: 20px;
+        background: #f1f8e9;
+        border-radius: 15px;
+        border: 2px dashed #4caf50;
+      }
+
+      .steps-title {
+        font-size: 1.5rem;
+        color: #2e7d32;
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      .steps-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+
+      .correct-steps-area {
+        background: linear-gradient(145deg, #e8f5e8, #c8e6c9);
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+        min-height: 100px;
+        border: 2px dashed #4caf50;
+      }
+
+      .correct-steps-title {
+        text-align: center;
+        color: #2e7d32;
+        font-weight: 600;
+        margin-bottom: 15px;
+      }
+
+      .correct-steps-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: center;
+      }
+
+      .correct-order {
+        background: linear-gradient(145deg, #4caf50, #45a049) !important;
+        color: white !important;
+        box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3) !important;
+        animation: slideToPosition 0.8s ease;
+        position: relative;
+      }
+
+      .correct-order::before {
+        content: attr(data-order);
+        position: absolute;
+        top: -8px;
+        left: -8px;
+        background: #ff9800;
+        color: white;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        font-weight: bold;
+      }
+
+      .step-item {
+        background: linear-gradient(145deg, #ffffff, #f8f9fa);
+        padding: 18px;
+        border-radius: 15px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        min-height: 90px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 500;
+      }
+
+      .step-item:hover {
+        box-shadow: 0 8px 20px rgba(76, 175, 80, 0.2);
+        transform: translateY(-3px);
+      }
+
+      .step-item.correct {
+        background: #c8e6c9;
+        border-color: #4caf50;
+        animation: correctAnswer 0.6s ease;
+      }
+
+      .step-item.incorrect {
+        background: #ffcdd2;
+        border-color: #f44336;
+        animation: shake 0.5s ease;
+      }
+
+      .controls {
+        text-align: center;
+        margin: 20px 0;
+      }
+
+      .btn {
+        background: linear-gradient(145deg, #4caf50, #45a049);
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        font-size: 1.1rem;
+        border-radius: 25px;
+        cursor: pointer;
+        margin: 0 10px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+      }
+
+      .btn:disabled {
+        background: #cccccc;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+
+      .hint-box {
+        background: #fff3e0;
+        border: 2px solid #ff9800;
+        border-radius: 15px;
+        padding: 20px;
+        margin: 20px 0;
+        text-align: center;
+        display: none;
+      }
+
+      .hint-box.show {
+        display: block;
+        animation: fadeIn 0.5s ease;
+      }
+
+      .progress-board {
+        background: linear-gradient(145deg, #4caf50, #388e3c);
+        color: white;
+        padding: 20px;
+        border-radius: 15px;
+        text-align: center;
+        margin-bottom: 20px;
+        position: relative;
+      }
+
+      .tree-container {
+        font-size: 4rem;
+        margin: 10px 0;
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-shadow: none;
+        border: none;
+        outline: none;
+      }
+
+      .timer {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #ffeb3b;
+      }
+
+      .celebration {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(76, 175, 80, 0.9);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+      }
+
+      .celebration.show {
+        display: flex;
+        animation: fadeIn 0.5s ease;
+      }
+
+      .celebration-content {
+        background: white;
+        padding: 40px;
+        border-radius: 20px;
+        text-align: center;
+        max-width: 600px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      }
+
+      .celebration-title {
+        font-size: 2.5rem;
+        color: #4caf50;
+        margin-bottom: 20px;
+        animation: bounce 1s infinite;
+      }
+
+      .final-celebration {
+        background: linear-gradient(135deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
+        background-size: 400% 400%;
+        animation: gradientShift 3s ease infinite;
+      }
+
+      .firework {
+        position: absolute;
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        animation: fireworkExplode 2s ease-out infinite;
+      }
+
+      @keyframes fireworkExplode {
+        0% {
+          transform: scale(0) translate(0, 0);
+          opacity: 1;
+        }
+        50% {
+          transform: scale(1.5) translate(var(--dx, 0), var(--dy, 0));
+          opacity: 0.9;
+        }
+        100% {
+          transform: scale(3)
+            translate(calc(var(--dx, 0) * 2), calc(var(--dy, 0) * 2));
+          opacity: 0;
+        }
+      }
+
+      .trophy-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: 20px;
+        max-width: 400px;
+      }
+
+      .trophy {
+        font-size: 3rem;
+        animation: bounce 2s infinite;
+        flex-shrink: 0;
+      }
+
+      .trophy:nth-child(1) {
+        animation-delay: 0s;
+      }
+
+      .trophy:nth-child(3) {
+        animation-delay: 0.5s;
+      }
+
+      .celebration-title {
+        font-size: 2.5rem;
+        color: #4caf50;
+        margin: 0;
+        text-align: center;
+        flex-grow: 1;
+      }
+
+      .final-text-container {
+        text-align: center;
+        margin: 25px 0;
+        padding: 0 20px;
+      }
+
+      .final-main-text {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #2e7d32;
+        margin: 20px 0;
+        line-height: 1.3;
+      }
+
+      .final-hero-text {
+        font-size: 1.3rem;
+        color: #4caf50;
+        font-weight: bold;
+        margin: 20px 0;
+        background: linear-gradient(135deg, #4caf50, #81c784);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        line-height: 1.4;
+      }
+
+      .final-description {
+        font-size: 1.1rem;
+        color: #555;
+        margin: 20px 0;
+        line-height: 1.5;
+        max-width: 400px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .final-footer {
+        text-align: center;
+        margin-top: 40px;
+        padding-top: 20px;
+        border-top: 2px solid #e8f5e8;
+      }
+
+      .final-credits {
+        font-size: 0.95rem;
+        color: #666;
+        margin-bottom: 25px;
+        font-style: italic;
+      }
+
+      .restart-btn {
+        background: linear-gradient(145deg, #ff9800, #f57c00);
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        font-size: 1rem;
+        border-radius: 25px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3);
+        font-weight: 600;
+      }
+
+      .restart-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(255, 152, 0, 0.4);
+      }
+
+      @keyframes bounceIn {
+        0% {
+          transform: scale(0.3);
+          opacity: 0;
+        }
+        50% {
+          transform: scale(1.05);
+        }
+        70% {
+          transform: scale(0.9);
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+
+      @keyframes correctAnswer {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.1);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      @keyframes shake {
+        0%,
+        100% {
+          transform: translateX(0);
+        }
+        25% {
+          transform: translateX(-5px);
+        }
+        75% {
+          transform: translateX(5px);
+        }
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      @keyframes bounce {
+        0%,
+        20%,
+        50%,
+        80%,
+        100% {
+          transform: translateY(0);
+        }
+        40% {
+          transform: translateY(-10px);
+        }
+        60% {
+          transform: translateY(-5px);
+        }
+      }
+
+      @keyframes gradientShift {
+        0% {
+          background-position: 0% 50%;
+        }
+        50% {
+          background-position: 100% 50%;
+        }
+        100% {
+          background-position: 0% 50%;
+        }
+      }
+
+      @keyframes slideToPosition {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.1);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      .confetti {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background: #ffd700;
+        animation: confettiFall 3s linear infinite;
+      }
+
+      @keyframes confettiFall {
+        0% {
+          transform: translateY(-100vh) rotate(0deg);
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(100vh) rotate(360deg);
+          opacity: 0;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .title {
+          font-size: 2rem;
+        }
+        .materials-grid {
+          grid-template-columns: 1fr;
+        }
+        .steps-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1 class="title">🌍 Эко-Сортер 🌱</h1>
+        <div class="fun-icons">♻️ 🎮 🌟 🎯 ⭐</div>
+        <p class="subtitle">
+          Супер-игра о переработке мусора для эко-сортеров!
+        </p>
+      </div>
+
+      <div class="progress-board">
+        <div class="tree-container">
+          <span id="tree-stage">🌱</span>
+        </div>
+        <div>
+          Ваш эко-прогресс: <span id="progress-text">Росток появился!</span>
+        </div>
+        <div class="timer" id="timer" style="display: none">
+          Время: <span id="time-left">2:00</span>
+        </div>
+      </div>
+
+      <div class="game-area">
+        <h2 style="text-align: center; color: #2e7d32; margin-bottom: 20px">
+          Выберите материал для изучения этапов переработки:
+        </h2>
+
+        <div class="materials-grid">
+          <div class="material-card" data-material="plastic">
+            <span class="material-icon">🥤</span>
+            <div class="material-name">Пластик</div>
+            <p>Бутылки, пакеты, контейнеры</p>
+          </div>
+          <div class="material-card" data-material="paper">
+            <span class="material-icon">📄</span>
+            <div class="material-name">Бумага</div>
+            <p>Газеты, картон, книги</p>
+          </div>
+          <div class="material-card" data-material="glass">
+            <span class="material-icon">🍶</span>
+            <div class="material-name">Стекло</div>
+            <p>Банки, бутылки, окна</p>
+          </div>
+          <div class="material-card" data-material="metal">
+            <span class="material-icon">🥫</span>
+            <div class="material-name">Металл</div>
+            <p>Банки, провода, детали</p>
+          </div>
+          <div class="material-card" data-material="hazardous">
+            <span class="material-icon">🔋</span>
+            <div class="material-name">Опасные отходы</div>
+            <p>Батарейки, лампы, краски</p>
+          </div>
+        </div>
+
+        <div class="steps-container" id="steps-container" style="display: none">
+          <h3 class="steps-title" id="steps-title">
+            Расставьте этапы переработки в правильном порядке:
+          </h3>
+
+          <div class="correct-steps-area" id="correct-steps-area">
+            <div class="correct-steps-title">
+              ✅ Правильная последовательность:
+            </div>
+            <div
+              class="correct-steps-container"
+              id="correct-steps-container"
+            ></div>
+          </div>
+
+          <div class="steps-grid" id="steps-grid"></div>
+        </div>
+
+        <div class="controls">
+          <button class="btn" id="hint-btn" onclick="showHint()" disabled>
+            💡 Подсказка
+          </button>
+        </div>
+
+        <div class="hint-box" id="hint-box">
+          <h4>💡 Подсказка:</h4>
+          <p id="hint-text"></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="celebration" id="celebration">
+      <div class="celebration-content">
+        <h2 class="celebration-title">🎉 Отлично!</h2>
+        <p id="celebration-text"></p>
+        <button class="btn" onclick="closeCelebration()">Продолжить</button>
+      </div>
+    </div>
+
+    <div class="celebration final-celebration" id="final-celebration">
+      <div class="celebration-content">
+        <div class="trophy-container">
+          <span class="trophy">🏆</span>
+          <h2 class="celebration-title">ПОЗДРАВЛЯЕМ!</h2>
+          <span class="trophy">🏆</span>
+        </div>
+        <div class="final-text-container">
+          <p class="final-main-text">Ты успешно завершил игру "Эко-Сортер"!</p>
+          <p class="final-hero-text">
+            🌟Ты получил звание "ЭКО-ГЕРОЙ" и спас планету ЦКБМ 4.0!🌟
+          </p>
+          <p class="final-description">
+            Теперь ты знаешь, как правильно перерабатывать различные материалы и
+            помогать нашей планете!
+          </p>
+        </div>
+        <div class="final-footer">
+          <p class="final-credits">Игра создана Советом молодежи АО "ЦКБМ"</p>
+          <button class="restart-btn" onclick="restartGame()">
+            🔄 Играть снова
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const materials = {
+        plastic: {
+          name: "Пластик",
+          icon: "🥤",
+          steps: [
+            "Сбор пластиковых отходов",
+            "Сортировка по типам пластика",
+            "Очистка и мойка",
+            "Измельчение в хлопья",
+            "Плавление и гранулирование",
+            "Производство новых изделий",
+          ],
+          hints: [
+            "Начните с самого первого шага - что делают с мусором?",
+            "После сбора нужно разделить разные виды пластика",
+            "Грязный пластик нельзя перерабатывать - что с ним делают?",
+            "Чистый пластик нужно сделать маленьким для удобства",
+            "При высокой температуре пластик становится жидким",
+            "Из переработанного материала делают что-то новое",
+          ],
+        },
+        paper: {
+          name: "Бумага",
+          icon: "📄",
+          steps: [
+            "Сбор макулатуры",
+            "Сортировка по качеству",
+            "Роспуск в воде",
+            "Очистка от примесей",
+            "Формирование листов",
+            "Сушка и упаковка",
+          ],
+          hints: [
+            "Первый шаг - собрать старую бумагу",
+            "Не вся бумага одинаковая - её нужно разделить",
+            "Бумагу превращают в жидкую массу с помощью воды",
+            "Из массы убирают скрепки, клей и другой мусор",
+            "Из чистой массы делают тонкие листы",
+            "Мокрые листы нужно высушить и упаковать",
+          ],
+        },
+        glass: {
+          name: "Стекло",
+          icon: "🍶",
+          steps: [
+            "Сбор стеклянных отходов",
+            "Сортировка по цветам",
+            "Очистка от этикеток",
+            "Дробление на осколки",
+            "Плавление в печи",
+            "Формовка новых изделий",
+          ],
+          hints: [
+            "Начинаем со сбора стеклянных бутылок и банок",
+            "Белое, зеленое и коричневое стекло разделяют",
+            "С бутылок снимают наклейки и этикетки",
+            "Стекло разбивают на мелкие кусочки",
+            "В очень горячей печи стекло становится жидким",
+            "Из жидкого стекла делают новые бутылки и банки",
+          ],
+        },
+        metal: {
+          name: "Металл",
+          icon: "🥫",
+          steps: [
+            "Сбор металлолома",
+            "Сортировка по типам металла",
+            "Очистка от загрязнений",
+            "Измельчение и прессование",
+            "Плавление в печи",
+            "Литье новых изделий",
+          ],
+          hints: [
+            "Собираем старые банки, провода и металлические детали",
+            "Железо, алюминий и медь - разные металлы",
+            "Металл очищают от краски, ржавчины и грязи",
+            "Металл режут и сжимают, чтобы он занимал меньше места",
+            "В печи металл плавится и становится жидким",
+            "Из жидкого металла отливают новые детали",
+          ],
+        },
+        hazardous: {
+          name: "Опасные отходы",
+          icon: "🔋",
+          steps: [
+            "Специальный сбор",
+            "Сортировка по опасности",
+            "Демонтаж компонентов",
+            "Извлечение ценных материалов",
+            "Нейтрализация токсинов",
+            "Безопасная утилизация остатков",
+          ],
+          hints: [
+            "Опасные отходы собирают в специальные контейнеры",
+            "Батарейки, лампы и краски - разная степень опасности",
+            "Устройства разбирают на части очень осторожно",
+            "Из батареек достают полезные металлы",
+            "Вредные вещества делают безопасными",
+            "То, что нельзя использовать, утилизируют безопасно",
+          ],
+        },
+      };
+
+      let currentMaterial = null;
+      let currentSteps = [];
+      let correctOrder = [];
+      let completedMaterials = [];
+      let selectedSteps = [];
+      let correctStepsCount = 0;
+      let timer = null;
+      let timeLeft = 120; // 2 минуты в секундах
+
+      const treeStages = ["🌱", "🌿", "🌳", "🌲", "🌳🌲"];
+      const treeTexts = [
+        "Росток появился!",
+        "Росток подрос!",
+        "Выросло маленькое дерево!",
+        "Дерево стало больше!",
+        "Целый лес! Вы - настоящий Эко-Герой!",
+      ];
+
+      function selectMaterial(materialKey) {
+        // Проверяем, доступен ли материал
+        const materialOrder = [
+          "plastic",
+          "paper",
+          "glass",
+          "metal",
+          "hazardous",
+        ];
+        const materialIndex = materialOrder.indexOf(materialKey);
+
+        if (materialIndex > completedMaterials.length) {
+          return; // Материал заблокирован
+        }
+
+        // Убираем выделение с других карточек
+        document.querySelectorAll(".material-card").forEach((card) => {
+          card.classList.remove("selected");
+        });
+
+        // Выделяем выбранную карточку
+        document
+          .querySelector(`[data-material="${materialKey}"]`)
+          .classList.add("selected");
+
+        currentMaterial = materialKey;
+        const material = materials[materialKey];
+
+        // Показываем контейнер с этапами
+        document.getElementById("steps-container").style.display = "block";
+        document.getElementById(
+          "steps-title"
+        ).textContent = `Расставьте этапы переработки материала "${material.name}" в правильном порядке:`;
+
+        // Перемешиваем этапы
+        correctOrder = [...material.steps];
+        currentSteps = [...material.steps].sort(() => Math.random() - 0.5);
+        selectedSteps = [];
+        correctStepsCount = 0;
+
+        displaySteps();
+        startTimer();
+
+        // Активируем кнопки
+        document.getElementById("hint-btn").disabled = false;
+      }
+
+      function displaySteps() {
+        const stepsGrid = document.getElementById("steps-grid");
+        stepsGrid.innerHTML = "";
+
+        currentSteps.forEach((step, index) => {
+          const stepElement = document.createElement("div");
+          stepElement.className = "step-item";
+          stepElement.textContent = step;
+          stepElement.onclick = () => selectStep(index, stepElement);
+          stepsGrid.appendChild(stepElement);
+        });
+      }
+
+      function selectStep(index, element) {
+        const step = currentSteps[index];
+        const correctIndex = correctOrder.indexOf(step);
+
+        if (element.classList.contains("correct-order")) {
+          return; // Уже правильно размещен
+        }
+
+        // Проверяем, правильный ли это следующий этап
+        if (correctIndex === correctStepsCount) {
+          // Правильный этап!
+          element.classList.add("correct-order");
+          element.setAttribute("data-order", correctStepsCount + 1);
+
+          // Перемещаем элемент в область правильных ответов
+          const correctContainer = document.getElementById(
+            "correct-steps-container"
+          );
+          element.remove();
+          correctContainer.appendChild(element);
+
+          correctStepsCount++;
+
+          // Обновляем дерево
+          updateTree();
+
+          // Проверяем, все ли этапы правильно расставлены
+          if (correctStepsCount === correctOrder.length) {
+            setTimeout(() => {
+              completeMaterial();
+            }, 1000);
+          }
+        } else {
+          // Неправильный этап
+          element.classList.add("incorrect");
+          setTimeout(() => {
+            element.classList.remove("incorrect");
+          }, 1000);
+        }
+      }
+
+      function startTimer() {
+        timeLeft = 120; // 2 минуты
+        document.getElementById("timer").style.display = "block";
+        updateTimerDisplay();
+
+        timer = setInterval(() => {
+          timeLeft--;
+          updateTimerDisplay();
+
+          if (timeLeft <= 0) {
+            clearInterval(timer);
+            showCelebration(
+              "⏰ Время вышло!",
+              "Попробуйте еще раз с другим материалом!"
+            );
+            nextMaterial();
+          }
+        }, 1000);
+      }
+
+      function updateTimerDisplay() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        document.getElementById("time-left").textContent = `${minutes}:${seconds
+          .toString()
+          .padStart(2, "0")}`;
+      }
+
+      function updateTree() {
+        const totalProgress = completedMaterials.length * 6 + correctStepsCount;
+        const stageIndex = Math.min(Math.floor(totalProgress / 6), 4);
+
+        document.getElementById("tree-stage").textContent =
+          treeStages[stageIndex];
+        document.getElementById("progress-text").textContent =
+          treeTexts[stageIndex];
+      }
+
+      function completeMaterial() {
+        clearInterval(timer);
+        document.getElementById("timer").style.display = "none";
+
+        completedMaterials.push(currentMaterial);
+
+        // Обновляем визуальное состояние карточек
+        updateMaterialCards();
+
+        showCelebration(
+          "🎉 Отлично!",
+          `Вы правильно расставили все этапы переработки материала "${materials[currentMaterial].name}"!`
+        );
+      }
+
+      function updateMaterialCards() {
+        const materialOrder = [
+          "plastic",
+          "paper",
+          "glass",
+          "metal",
+          "hazardous",
+        ];
+
+        materialOrder.forEach((materialKey, index) => {
+          const card = document.querySelector(
+            `[data-material="${materialKey}"]`
+          );
+
+          if (completedMaterials.includes(materialKey)) {
+            // Пройденный материал
+            card.classList.add("completed");
+            card.classList.remove("locked");
+          } else if (index <= completedMaterials.length) {
+            // Доступный материал
+            card.classList.remove("locked", "completed");
+          } else {
+            // Заблокированный материал
+            card.classList.add("locked");
+            card.classList.remove("completed");
+          }
+        });
+      }
+
+      function showHint() {
+        const hintBox = document.getElementById("hint-box");
+        const hintText = document.getElementById("hint-text");
+
+        // Показываем подсказку для следующего этапа
+        const nextHintIndex = correctStepsCount;
+        if (nextHintIndex < materials[currentMaterial].hints.length) {
+          hintText.textContent =
+            materials[currentMaterial].hints[nextHintIndex];
+        } else {
+          hintText.textContent = "Вы почти у цели! Осталось совсем немного!";
+        }
+
+        hintBox.classList.add("show");
+
+        // Скрываем подсказку через 8 секунд
+        setTimeout(() => {
+          hintBox.classList.remove("show");
+        }, 8000);
+      }
+
+      function nextMaterial() {
+        // Останавливаем таймер
+        if (timer) {
+          clearInterval(timer);
+        }
+        document.getElementById("timer").style.display = "none";
+
+        // Проверяем, все ли материалы пройдены
+        if (completedMaterials.length >= 5) {
+          showFinalCelebration();
+          return;
+        }
+
+        // Сбрасываем текущий материал
+        currentMaterial = null;
+        selectedSteps = [];
+        correctStepsCount = 0;
+
+        // Очищаем область правильных ответов
+        document.getElementById("correct-steps-container").innerHTML = "";
+
+        // Убираем выделение с карточек
+        document.querySelectorAll(".material-card").forEach((card) => {
+          card.classList.remove("selected");
+        });
+
+        // Скрываем контейнер с этапами
+        document.getElementById("steps-container").style.display = "none";
+
+        // Сбрасываем кнопки
+        document.getElementById("hint-btn").disabled = true;
+
+        // Скрываем подсказку
+        document.getElementById("hint-box").classList.remove("show");
+      }
+
+      function showCelebration(title, text) {
+        document.getElementById("celebration").classList.add("show");
+        document.querySelector(".celebration-title").textContent = title;
+        document.getElementById("celebration-text").textContent = text;
+
+        // Добавляем конфетти для правильных ответов
+        if (title.includes("Превосходно")) {
+          createConfetti();
+        }
+      }
+
+      function closeCelebration() {
+        document.getElementById("celebration").classList.remove("show");
+
+        // Автоматически переходим к следующему материалу
+        nextMaterial();
+
+        // Если есть следующий доступный материал, автоматически его выбираем
+        const materialOrder = [
+          "plastic",
+          "paper",
+          "glass",
+          "metal",
+          "hazardous",
+        ];
+        const nextMaterialIndex = completedMaterials.length;
+
+        if (nextMaterialIndex < materialOrder.length) {
+          setTimeout(() => {
+            selectMaterial(materialOrder[nextMaterialIndex]);
+          }, 500);
+        }
+      }
+
+      function showFinalCelebration() {
+        // Обновляем дерево до финальной стадии
+        document.getElementById("tree-stage").textContent = treeStages[4];
+        document.getElementById("progress-text").textContent = treeTexts[4];
+
+        document.getElementById("final-celebration").classList.add("show");
+        createConfetti();
+        createFireworks();
+      }
+
+      function createConfetti() {
+        const colors = [
+          "#FFD700",
+          "#FF6B6B",
+          "#4ECDC4",
+          "#45B7D1",
+          "#96CEB4",
+          "#FECA57",
+        ];
+
+        for (let i = 0; i < 50; i++) {
+          setTimeout(() => {
+            const confetti = document.createElement("div");
+            confetti.className = "confetti";
+            confetti.style.left = Math.random() * 100 + "%";
+            confetti.style.backgroundColor =
+              colors[Math.floor(Math.random() * colors.length)];
+            confetti.style.animationDelay = Math.random() * 2 + "s";
+            document.body.appendChild(confetti);
+
+            setTimeout(() => {
+              confetti.remove();
+            }, 3000);
+          }, i * 100);
+        }
+      }
+
+      function createFireworks() {
+        const colors = [
+          "#FF6B6B",
+          "#4ECDC4",
+          "#45B7D1",
+          "#96CEB4",
+          "#FECA57",
+          "#FF9800",
+          "#E91E63",
+          "#9C27B0",
+          "#00BCD4",
+        ];
+
+        for (let i = 0; i < 40; i++) {
+          setTimeout(() => {
+            // Создаем центр взрыва
+            const centerX = 20 + Math.random() * 60; // Ограничиваем область взрыва
+            const centerY = 20 + Math.random() * 60;
+
+            // Создаем частицы фейерверка
+            for (let j = 0; j < 15; j++) {
+              const firework = document.createElement("div");
+              firework.className = "firework";
+              firework.style.left = centerX + "%";
+              firework.style.top = centerY + "%";
+              firework.style.backgroundColor =
+                colors[Math.floor(Math.random() * colors.length)];
+              firework.style.width = 3 + Math.random() * 4 + "px";
+              firework.style.height = firework.style.width;
+
+              // Случайное направление для каждой частицы
+              const angle = j * 24 + Math.random() * 24; // 360/15 = 24 градуса между частицами
+              const distance = 30 + Math.random() * 80;
+              const dx = Math.cos((angle * Math.PI) / 180) * distance;
+              const dy = Math.sin((angle * Math.PI) / 180) * distance;
+
+              firework.style.setProperty("--dx", dx + "px");
+              firework.style.setProperty("--dy", dy + "px");
+
+              firework.style.animation = `fireworkExplode 2.5s ease-out forwards`;
+              firework.style.animationDelay = Math.random() * 0.8 + "s";
+
+              // Добавляем блеск
+              firework.style.boxShadow = `0 0 6px ${
+                colors[Math.floor(Math.random() * colors.length)]
+              }`;
+
+              document
+                .getElementById("final-celebration")
+                .appendChild(firework);
+
+              setTimeout(() => {
+                if (firework.parentNode) {
+                  firework.remove();
+                }
+              }, 4000);
+            }
+          }, i * 150);
+        }
+      }
+
+      function restartGame() {
+        completedMaterials = [];
+        currentMaterial = null;
+        selectedSteps = [];
+        correctStepsCount = 0;
+
+        if (timer) {
+          clearInterval(timer);
+        }
+
+        // Сбрасываем дерево
+        document.getElementById("tree-stage").textContent = treeStages[0];
+        document.getElementById("progress-text").textContent = treeTexts[0];
+
+        // Очищаем область правильных ответов
+        document.getElementById("correct-steps-container").innerHTML = "";
+
+        // Обновляем состояние карточек
+        updateMaterialCards();
+
+        document.getElementById("final-celebration").classList.remove("show");
+        document.getElementById("timer").style.display = "none";
+        document.querySelectorAll(".material-card").forEach((card) => {
+          card.classList.remove("selected");
+        });
+        document.getElementById("steps-container").style.display = "none";
+        document.getElementById("hint-box").classList.remove("show");
+
+        document.getElementById("hint-btn").disabled = true;
+      }
+
+      // Добавляем обработчики событий для карточек материалов
+      document.querySelectorAll(".material-card").forEach((card) => {
+        card.addEventListener("click", () => {
+          const material = card.getAttribute("data-material");
+          const materialOrder = [
+            "plastic",
+            "paper",
+            "glass",
+            "metal",
+            "hazardous",
+          ];
+          const materialIndex = materialOrder.indexOf(material);
+
+          // Проверяем, доступен ли материал
+          if (
+            materialIndex <= completedMaterials.length &&
+            !completedMaterials.includes(material)
+          ) {
+            selectMaterial(material);
+          }
+        });
+      });
+
+      // Инициализация игры
+      updateMaterialCards();
+    </script>
+    <script>
+      (function () {
+        function c() {
+          var b = a.contentDocument || a.contentWindow.document;
+          if (b) {
+            var d = b.createElement("script");
+            d.innerHTML =
+              "window.__CF$cv$params={r:'96e20ca4c0c1fa7e',t:'MTc1NTAyMzQ4My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";
+            b.getElementsByTagName("head")[0].appendChild(d);
+          }
+        }
+        if (document.body) {
+          var a = document.createElement("iframe");
+          a.height = 1;
+          a.width = 1;
+          a.style.position = "absolute";
+          a.style.top = 0;
+          a.style.left = 0;
+          a.style.border = "none";
+          a.style.visibility = "hidden";
+          document.body.appendChild(a);
+          if ("loading" !== document.readyState) c();
+          else if (window.addEventListener)
+            document.addEventListener("DOMContentLoaded", c);
+          else {
+            var e = document.onreadystatechange || function () {};
+            document.onreadystatechange = function (b) {
+              e(b);
+              "loading" !== document.readyState &&
+                ((document.onreadystatechange = e), c());
+            };
+          }
+        }
+      })();
+    </script>
+  </body>
+</html>
